@@ -1,8 +1,9 @@
 use super::TFileReader;
+use std::str;
 
 pub struct Header {
     pub release: i32,
-    pub magic_number: Box<[u8]>,
+    pub magic_number: [u8; 7],
     pub file_type: u8,
     pub revision: u32,
     pub is_favorite: u64,
@@ -13,7 +14,9 @@ pub struct Header {
 impl Header {
     pub fn new(world: &mut TFileReader) -> Header {
         let release = world.read_int_32(); //0..4
-        let magic_number = world.read_multiple_bytes(7); //4..11
+        let mut magic_number: [u8; 7] = [0; 7];
+        world.read_multiple_bytes(&mut magic_number); //4..11
+        assert_eq!(str::from_utf8(&magic_number).unwrap(), "relogic", "Magic number verification failed");
         let file_type = world.read_byte(); //1 for .MAP, 2 for .WLD, 3 for .PLR
         let revision = world.read_int_32() as u32; //Incremented every time the file is saved
         let is_favorite = world.read_int_64() as u64;

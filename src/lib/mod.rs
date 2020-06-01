@@ -23,6 +23,7 @@ pub fn run() -> Result<i32, Box<dyn Error>> {
     let world_name = "Corruption Farm".to_string();
     let world_path = format!("worlds/{}.wld", world_name);
 
+    //make a loading bar or something here to get the status. Make it re-usable for world.iterate_tiles()
     let file = File::open(world_path).expect("Unable to open world file");
     let bytes = file.bytes().collect::<Result<Vec<_>, _>>().unwrap();
 
@@ -30,15 +31,15 @@ pub fn run() -> Result<i32, Box<dyn Error>> {
     let header = Header::new(&mut tfile_reader);
     let mut world = World::new(tfile_reader, header);
 
-    println!("Successfully read data for world from version {}.\nFound world tile section located at offset: {:#X}", world.header.release, world.header.array_of_pointers.tiles);
-
     let name = world.world_name();
 
     //Asserting that the specified and discovered world names are equal verifies that the file was read as expected
     assert_eq!(world_name, name, "File world name and found world name do not match, world file was read incorrectly.");
 
-    println!("Found world name: {}", name);
-    //iterate_world_tiles(bytes, header);
+    println!("Successfully read data for world '{}' with version {}.\nFound world tile section located at offset: {:#X}", name, world.header.release, world.header.array_of_pointers.tiles);
+
+    let crystal_heart_count = world.iterate_tiles();
+    print!("World has {} crystal heart tiles", crystal_heart_count);
 
     Ok(0)
 }

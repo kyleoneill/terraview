@@ -37,10 +37,14 @@ impl TFileReader {
         self.file[curr_pos]
     }
 
-    pub fn read_multiple_bytes(&mut self, amount: usize) -> Box<[u8]> {
+    pub fn read_multiple_bytes(&mut self, bytes: &mut [u8]) {
         let curr_pos = self.position;
+        let amount = bytes.len();
+        assert!(curr_pos + amount < self.file.len(), "Tried to read out of bounds");
         self.position += amount;
-        self.file[curr_pos..self.position].try_into().unwrap()
+        for i in curr_pos..self.position {
+            bytes[i - curr_pos] = self.file[i];
+        }
     }
 
     pub fn read_string(&mut self) -> &str {
@@ -51,7 +55,12 @@ impl TFileReader {
     }
 
     pub fn increment_position(&mut self, amount: usize) {
+        assert!(self.position + amount < self.file.len(), "Tried to increment reader out of bounds");
         self.position += amount;
+    }
+
+    pub fn decrement_position(&mut self, amount: usize) {
+        self.position -= amount;
     }
 
     pub fn get_position(&mut self) -> usize {
@@ -59,7 +68,7 @@ impl TFileReader {
     }
 
     pub fn move_to_position(&mut self, new_pos: usize) {
-        assert!(new_pos < self.file.len());
+        assert!(new_pos < self.file.len(), "New position is out of bounds");
         self.position = new_pos;
     }
 
