@@ -1,7 +1,4 @@
 use std::error::Error;
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::{Write, BufReader, BufRead};
 
 mod tfilereader;
 use tfilereader::TFileReader;
@@ -24,12 +21,7 @@ pub fn run() -> Result<i32, Box<dyn Error>> {
     let world_path = format!("worlds/{}.wld", world_name);
 
     //make a loading bar or something here to get the status. Make it re-usable for world.iterate_tiles()
-    let file = File::open(world_path).expect("Unable to open world file");
-    let bytes = file.bytes().collect::<Result<Vec<_>, _>>().unwrap();
-
-    let mut tfile_reader = TFileReader::new(bytes);
-    let header = Header::new(&mut tfile_reader);
-    let mut world = World::new(tfile_reader, header);
+    let mut world = World::new(&world_path.as_ref());
 
     let name = world.world_name();
 

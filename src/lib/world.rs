@@ -1,6 +1,7 @@
 use super::TFileReader;
 use super::Header;
 use std::convert::TryInto;
+use std::path::Path;
 
 pub struct World {
     pub tfile_reader: TFileReader,
@@ -8,7 +9,9 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(tfile_reader: TFileReader, header: Header) -> World {
+    pub fn new(file_path: &Path) -> World {
+        let mut tfile_reader = TFileReader::new(file_path);
+        let header = Header::new(&mut tfile_reader);
         World {
             tfile_reader,
             header

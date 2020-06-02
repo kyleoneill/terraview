@@ -1,14 +1,19 @@
 use std::convert::TryInto;
 use std::str;
+use std::path::Path;
+use std::fs::File;
+use std::io::prelude::*;
 pub struct TFileReader {
     file: Vec<u8>,
     position: usize
 }
 
 impl TFileReader {
-    pub fn new(file: Vec<u8>) -> TFileReader {
+    pub fn new(world_path: &Path) -> TFileReader {
+        let file = File::open(world_path).expect("Unable to open world file");
+        let bytes = file.bytes().collect::<Result<Vec<_>, _>>().unwrap();
         TFileReader {
-            file,
+            file: bytes,
             position: 0
         }
     }
@@ -54,11 +59,13 @@ impl TFileReader {
         str::from_utf8(&self.file[curr_pos..curr_pos + string_len]).unwrap()
     }
 
+    #[allow(dead_code)]
     pub fn increment_position(&mut self, amount: usize) {
         assert!(self.position + amount < self.file.len(), "Tried to increment reader out of bounds");
         self.position += amount;
     }
 
+    #[allow(dead_code)]
     pub fn decrement_position(&mut self, amount: usize) {
         self.position -= amount;
     }
