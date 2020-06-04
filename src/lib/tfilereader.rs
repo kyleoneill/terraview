@@ -79,4 +79,8 @@ impl TFileReader {
         self.position = new_pos;
     }
 
+    pub fn get_file(&self) -> &Vec<u8> {
+        &self.file
+    }
+
 }

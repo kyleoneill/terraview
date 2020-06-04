@@ -2,6 +2,9 @@ use super::TFileReader;
 use super::Header;
 use std::convert::TryInto;
 use std::path::Path;
+use std::error::Error;
+use std::fs::File;
+use std::io::Write;
 
 pub struct World {
     pub tfile_reader: TFileReader,
@@ -16,6 +19,12 @@ impl World {
             tfile_reader,
             header
         }
+    }
+
+    pub fn save_world(&mut self, file_path: &Path) -> Result<i32, Box<dyn Error>> {
+        let mut f = File::create(file_path).expect("Unable to create file");
+        f.write(self.tfile_reader.get_file().as_slice())?;
+        Ok(0)
     }
 
     pub fn world_name(&mut self) -> String{

@@ -31,7 +31,13 @@ pub fn run() -> Result<i32, Box<dyn Error>> {
     println!("Successfully read data for world '{}' with version {}.\nFound world tile section located at offset: {:#X}", name, world.header.release, world.header.array_of_pointers.tiles);
 
     let crystal_heart_count = world.iterate_tiles();
-    print!("World has {} crystal heart tiles", crystal_heart_count);
+    println!("World has {} crystal heart tiles", crystal_heart_count);
+
+    let modified_world_name = format!("worlds/{}_modified.wld", world_name);
+    match world.save_world(&modified_world_name.as_ref()) {
+        Ok(_i32) => println!("Successively saved world file"),
+        Err(_) => println!("Failed to save world file")
+    };
 
     Ok(0)
 }
