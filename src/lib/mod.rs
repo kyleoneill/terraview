@@ -30,8 +30,8 @@ pub fn run() -> Result<i32, Box<dyn Error>> {
 
     println!("Successfully read data for world '{}' with version {}.\nFound world tile section located at offset: {:#X}", name, world.header.release, world.header.array_of_pointers.tiles);
 
-    let crystal_heart_count = world.iterate_tiles();
-    println!("World has {} crystal heart tiles", crystal_heart_count);
+    // let modified_count = world.iterate_tiles();
+    // println!("Replaced {} tile(s)", modified_count);
 
     let modified_world_name = format!("worlds/{}_modified.wld", world_name);
     match world.save_world(&modified_world_name.as_ref()) {

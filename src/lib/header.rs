@@ -8,6 +8,7 @@ pub struct Header {
     pub revision: u32,
     pub is_favorite: u64,
     pub num_of_pointers: u16,
+    pub array_start_address: usize,
     pub array_of_pointers: FilePointers
 }
 
@@ -21,6 +22,7 @@ impl Header {
         let revision = world.read_int_32() as u32; //Incremented every time the file is saved
         let is_favorite = world.read_int_64() as u64;
         let num_of_pointers = world.read_int_16() as u16; //24..26
+        let array_start_address = world.get_position();
         let array_of_pointers = FilePointers::new(world, num_of_pointers);
         Header {
             release,
@@ -29,30 +31,39 @@ impl Header {
             revision,
             is_favorite,
             num_of_pointers,
+            array_start_address,
             array_of_pointers
         }
     }
 }
 
 pub struct FilePointers {
-    pub header: usize,
-    pub tiles: usize,
-    pub chests: usize,
-    pub signs: usize,
-    pub npc: usize,
-    pub entities: usize,
-    pub footer: usize
+    pub header: i32,
+    pub tiles: i32,
+    pub chests: i32,
+    pub signs: i32,
+    pub npc: i32,
+    pub entities: i32,
+    pub footer: i32,
+    pub unknown_1: i32,
+    pub unknown_2: i32,
+    pub unknown_3: i32,
+    pub unknown_4: i32
 }
 
 impl FilePointers {
     fn new(world: &mut TFileReader, _amount: u16) -> FilePointers {
-        let header = world.read_int_32() as usize; //26..30
-        let tiles = world.read_int_32() as usize; //30..34
-        let chests = world.read_int_32() as usize; //34..38
-        let signs = world.read_int_32() as usize; //38..42
-        let npc = world.read_int_32() as usize; //42..46]
-        let entities = world.read_int_32() as usize; //46..50
-        let footer = world.read_int_32() as usize; //50..54
+        let header = world.read_int_32(); //26..30
+        let tiles = world.read_int_32(); //30..34
+        let chests = world.read_int_32(); //34..38
+        let signs = world.read_int_32(); //38..42
+        let npc = world.read_int_32(); //42..46
+        let entities = world.read_int_32(); //46..50
+        let footer = world.read_int_32(); //50..54
+        let unknown_1 = world.read_int_32();
+        let unknown_2 = world.read_int_32();
+        let unknown_3 = world.read_int_32();
+        let unknown_4 = world.read_int_32();
         FilePointers {
             header,
             tiles,
@@ -60,7 +71,11 @@ impl FilePointers {
             signs,
             npc,
             entities,
-            footer
+            footer,
+            unknown_1,
+            unknown_2,
+            unknown_3,
+            unknown_4
         }
     }
 }
