@@ -21,6 +21,54 @@ pub enum FilePointerArray {
     Unknown4 = 10
 }
 
+pub struct Tile {
+    pub flag_1: u8,
+    pub flag_2: Option<u8>,
+    pub flag_3: Option<u8>,
+    pub tile_type: Option<u16>
+}
+
+impl Tile {
+    pub fn new(world: &mut World) -> Tile {
+        let flag_1 = world.tfile_reader.read_byte();
+        assert!(flag_1 != 255, "Flag1 should not have every bit set");
+        let mut flag_2 = None;
+        let mut flag_3 = None;
+        let mut tile_type = None;
+        let second_flag_present = (flag_1 & 1) != 0;
+        if second_flag_present {
+            flag_2 = Some(world.tfile_reader.read_byte());
+            let third_flag_present = (flag_2.unwrap() & 1) != 0;
+            if third_flag_present {
+                flag_3 = Some(world.tfile_reader.read_byte()); //Flag3 may or may not exist
+            }
+        }
+        let block_has_tile_type = (flag_1 & 2) != 0; //Bit 1 must be set if the block has a tile type
+        if block_has_tile_type {
+            let block_is_two_bytes = (flag_1 & 32) != 0; //If bit 5 is set, the block is stored over 2 bytes rather than 1
+            if block_is_two_bytes {
+                let mut tile_bytes: [u8; 2] = [0; 2];
+                world.tfile_reader.read_multiple_bytes(&mut tile_bytes);
+                let tt = u16::from_le_bytes(tile_bytes);
+                assert!(tt < 10000, "Tile type is too high");
+                tile_type = Some(tt);
+            }
+            else {
+                let convert_tt = world.tfile_reader.read_byte();
+                let convert_tt = u16::from(convert_tt);//u16::from_le_bytes(convert_tt);
+                assert!(convert_tt < 10000, "Tile type is too high");
+                tile_type = Some(convert_tt);
+            }
+        }
+        Tile {
+            flag_1,
+            flag_2,
+            flag_3,
+            tile_type
+        }
+    }
+}
+
 pub struct World {
     pub tfile_reader: TFileReader,
     pub header: Header
@@ -127,37 +175,60 @@ impl World {
     }
 
     pub fn read_tile(&mut self) -> u32 {
-        //broken - need to ensure that the entire tile is being read. There is potentially 10 bytes
-        //not being read, this function currently stops reading the tile after the 1 or 2 byte tile ID
-        let tile_to_check = 23; //23 is for corrupt grass - this is a test value
-        let flag_1 = self.tfile_reader.read_byte();
-        let can_replace_block = (flag_1 & 1) != 0; //Bit 0 must be set if the block can be modified
-        let block_is_two_bytes = (flag_1 & 33) != 0; //If bit 5 is set, the block is stored over 2 bytes rather than 1
-        if can_replace_block {
-            let flag_2 = self.tfile_reader.read_byte(); //Flag2 always has to exist here
-            let third_flag_present = (flag_2 & 1) != 0;
-            if third_flag_present {
-                let _flag_3 = self.tfile_reader.read_byte(); //Flag3 may or may not exist
-            }
-            if block_is_two_bytes {
-                let mut tile_bytes: [u8; 2] = [0; 2];
-                self.tfile_reader.read_multiple_bytes(&mut tile_bytes);
-                let tile = u16::from_le_bytes(tile_bytes.try_into().unwrap());
-                if tile == tile_to_check {
-                    let new_tile: u16 = 2;
-                    let bytes:[u8; 2] = new_tile.to_le_bytes();
-                    self.tfile_reader.replace_bytes(&bytes);
-                    return 1
+        //is there a way to clean this up? Try to match things once, but keep the byte order in tact?
+        let tile_to_check = 85; //85 is for gravestones - this is a test value
+        let tile = Tile::new(self);
+        let mut count = 0;
+        match tile.tile_type {
+            Some(tile_type) => {
+                let byte_position = tile_type / 8;
+                let bit_position = tile_type % 8;
+                let is_tile_frame_important = (self.header.tile_frame_important[byte_position as usize] & (1 << bit_position)) != 0;
+                if is_tile_frame_important {
+                    let _frame_x = self.tfile_reader.read_int_16();
+                    let _frame_y = self.tfile_reader.read_int_16();
+                }
+                if tile_to_check == tile_type {
+                    count += 1;
+                }
+                match tile.flag_3 {
+                    Some(flag_3) => {
+                        if (flag_3 & 8) != 0 { //paint of tile set if flag3 bit 3 is 1
+                            let _paint_of_tile = self.tfile_reader.read_byte();
+                        }
+                    },
+                    None => ()
                 }
             }
-            else {
-                let tile = self.tfile_reader.read_byte();
-                if tile as u16 == tile_to_check {
-                    self.tfile_reader.replace_byte(2);
-                    return 1
+            None => ()
+        }
+        if (tile.flag_1 & 4) != 0 { //type of wall set if flag1 bit 2 is 1
+            let _type_of_wall = self.tfile_reader.read_byte();
+            match tile.flag_3 {
+                Some(flag_3) => {
+                    if (flag_3 & 16) != 0 { //paint of wall set if flag3 bit 4 is 1
+                        let _paint_of_wall = self.tfile_reader.read_byte();
+                    }
                 }
+                None => ()
             }
         }
-        0
+        if (tile.flag_1 & 24) != 0 { //volume of liquid set if flag1 bit 3 OR flag1 bit 4 is 1
+            let _volume_of_liquid = self.tfile_reader.read_byte();
+        }
+        let rle = (tile.flag_1 & 192) >> 6;
+        if rle == 0 {
+            //No RLE
+        }
+        else if rle == 1 {
+            let _rle_lsb = self.tfile_reader.read_byte();
+        }
+        else if rle == 2 {
+            let _rle_msb = self.tfile_reader.read_int_16();
+        }
+        else {
+            panic!("RLE compression error");
+        }
+        count
     }
 }

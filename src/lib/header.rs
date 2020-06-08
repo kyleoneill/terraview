@@ -1,5 +1,6 @@
 use super::TFileReader;
 use std::str;
+use std::fmt;
 
 pub struct Header {
     pub release: i32,
@@ -9,7 +10,9 @@ pub struct Header {
     pub is_favorite: u64,
     pub num_of_pointers: u16,
     pub array_start_address: usize,
-    pub array_of_pointers: FilePointers
+    pub array_of_pointers: FilePointers,
+    pub num_of_tile_frame_important: i16,
+    pub tile_frame_important: [u8; 78]
 }
 
 impl Header {
@@ -24,6 +27,11 @@ impl Header {
         let num_of_pointers = world.read_int_16() as u16; //24..26
         let array_start_address = world.get_position();
         let array_of_pointers = FilePointers::new(world, num_of_pointers);
+        let num_of_tile_frame_important = world.read_int_16();
+        let mut tile_frame_important = [0; 78]; //num_of_tile_frame_important = 623 in 1.4. The closest largest byte value for this is 78, hence the len of array
+        for n in 0..tile_frame_important.len() {
+            tile_frame_important[n] = world.read_byte();
+        }
         Header {
             release,
             magic_number,
@@ -32,7 +40,9 @@ impl Header {
             is_favorite,
             num_of_pointers,
             array_start_address,
-            array_of_pointers
+            array_of_pointers,
+            num_of_tile_frame_important,
+            tile_frame_important
         }
     }
 }
@@ -77,5 +87,20 @@ impl FilePointers {
             unknown_3,
             unknown_4
         }
+    }
+}
+
+impl fmt::Debug for FilePointers {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+            "Header: {}\nTiles: {}\nChests: {}\n Signs: {}\nNPC: {}\nEntities: {}\nFooter: {}",
+            self.header,
+            self.tiles,
+            self.chests,
+            self.signs,
+            self.npc,
+            self.entities,
+            self.footer
+        )
     }
 }
