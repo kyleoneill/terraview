@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::time::Instant;
 
 mod tfilereader;
 use tfilereader::TFileReader;
@@ -17,6 +18,7 @@ and then re-encode it back to the stored format and
 overwrite the file
 **/
 pub fn run() -> Result<i32, Box<dyn Error>> {
+    let start = Instant::now();
     let world_name = "Corruption Farm".to_string();
     let world_path = format!("worlds/{}.wld", world_name);
 
@@ -30,13 +32,13 @@ pub fn run() -> Result<i32, Box<dyn Error>> {
 
     println!("Successfully read data for world '{}' with version {}.\nFound world tile section located at offset: {:#X}", name, world.header.release, world.header.array_of_pointers.tiles);
     let modified_count = world.iterate_tiles();
-    println!("Replaced {} tile(s)", modified_count);
+    println!("Replaced {} evil and hallow tile(s)", modified_count);
 
-    // let modified_world_name = format!("worlds/{}_modified.wld", world_name);
-    // match world.save_world(&modified_world_name.as_ref()) {
-    //     Ok(_i32) => println!("Successively saved world file"),
-    //     Err(_) => println!("Failed to save world file")
-    // };
+    let modified_world_name = format!("worlds/{}_modified.wld", world_name);
+    match world.save_world(&modified_world_name.as_ref()) {
+        Ok(_i32) => println!("Successively saved world file.\nRuntime: {}ms", start.elapsed().as_millis()),
+        Err(_) => println!("Failed to save world file")
+    };
 
     Ok(0)
 }

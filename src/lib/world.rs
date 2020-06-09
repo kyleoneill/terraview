@@ -1,10 +1,10 @@
 use super::TFileReader;
 use super::Header;
-use std::convert::TryInto;
 use std::path::Path;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
+use std::collections::HashMap;
 
 #[repr(u8)]
 pub enum FilePointerArray {
@@ -168,28 +168,61 @@ impl World {
     pub fn iterate_tiles(&mut self) -> u32 {
         let mut running_total = 0;
         self.tfile_reader.move_to_position(self.header.array_of_pointers.tiles as usize);
+        
+        let tile_replacements: HashMap<u16, u16> = [
+            (112 as u16, 53 as u16), //ebonstone
+            (23 as u16, 2 as u16), //corrupt grass
+            (163 as u16, 161 as u16), //purple ice
+            (25 as u16, 1 as u16), //ebonstone
+            (116 as u16, 53 as u16), //pearlsand
+            (109 as u16, 2 as u16), //hallow grass
+            (164 as u16, 161 as u16), //pink ice
+            (117 as u16, 1 as u16), //pearlstone
+            (234 as u16, 53 as u16), //crimsand
+            (199 as u16, 2 as u16), //crimson grass
+            (200 as u16, 161 as u16), //red ice
+            (203 as u16, 1 as u16), //crimstone
+            (402 as u16, 397 as u16), //hardened pearlsand block
+            (399 as u16, 397 as u16), //hardened crimsand block
+            (398 as u16, 397 as u16), //hardened ebonsand block
+            (403 as u16, 396 as u16), //pearlsandstone
+            (401 as u16, 396 as u16), //crimsandstone
+            (400 as u16, 396 as u16), //ebonsandstone
+        ].iter().cloned().collect();
+
         while self.tfile_reader.get_position() < (self.header.array_of_pointers.chests as usize) {
-            running_total += self.read_tile();
+            running_total += self.read_tile(&tile_replacements);
         }
         running_total
     }
 
-    pub fn read_tile(&mut self) -> u32 {
-        //is there a way to clean this up? Try to match things once, but keep the byte order in tact?
-        let tile_to_check = 85; //85 is for gravestones - this is a test value
+    pub fn read_tile(&mut self, replacement_map: &HashMap<u16, u16>) -> u32 {
+        // TODO - is there a way to clean this up? Try to match things once, but keep the byte order intact?
         let tile = Tile::new(self);
         let mut count = 0;
         match tile.tile_type {
             Some(tile_type) => {
+                if tile_type < 256 {
+                    // TODO - delete corrupt weeds, crimson weeds. Will change the byte-structure of the tile
+                    if replacement_map.contains_key(&tile_type) {
+                        self.tfile_reader.replace_byte(replacement_map.get(&tile_type).unwrap().to_owned() as u8);
+                        count += 1;
+                    }
+                }
+                else {
+                    //I'm assuming that the tile ID is two byte here? The current method works but it should be tested further
+                    if replacement_map.contains_key(&tile_type) {
+                        let replacement = replacement_map.get(&tile_type).unwrap().to_le_bytes();
+                        self.tfile_reader.replace_bytes(&replacement);
+                        count += 1;
+                    }
+                }
                 let byte_position = tile_type / 8;
                 let bit_position = tile_type % 8;
                 let is_tile_frame_important = (self.header.tile_frame_important[byte_position as usize] & (1 << bit_position)) != 0;
                 if is_tile_frame_important {
                     let _frame_x = self.tfile_reader.read_int_16();
                     let _frame_y = self.tfile_reader.read_int_16();
-                }
-                if tile_to_check == tile_type {
-                    count += 1;
                 }
                 match tile.flag_3 {
                     Some(flag_3) => {
