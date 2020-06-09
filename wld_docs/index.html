@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WLD Documentation</title>
+        <link rel="stylesheet" href="style.css">
+        <meta charset="UTF-8">
+    </head>
+    <body>
+        <div id="sections">
+            <h2>Sections of a WLD file</h2>
+            <p>A WLD file is made of 11 sections. I only know what 8 of these do, and the address of the 8th section (which can be viewed in the file format header section) points to the end of the file.</p>
+            <ol>
+                <li>
+                    <a href="#type_formats">Type Formats</a>
+                </li>
+                <li>
+                    <a href="#file_format_header">fileFormatHeader</a>
+                </li>
+                <li>
+                    <a href="#world_header">World Header</a>
+                </li>
+                <li>
+                    <a href="#world_tiles">World Tiles</a>
+                </li>
+                <li>
+                    <a href="#chests">Chests</a>
+                </li>
+                <li>
+                    <a href="#signs">Signs</a>
+                </li>
+                <li>
+                    <a href="#npcs">NPCs</a>
+                </li>
+                <li>
+                    <a href="#entities">Entities</a>
+                </li>
+                <li>
+                    <a href="#footer">Footer</a>
+                </li>
+            </ol>
+        </div>
+        <div id="type_formats">
+            <h2>Type Formats</h2>
+            <p>The types used in the world file are below, all stored in <b>little-endian</b></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Bytes</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>byte</td>
+                        <td>1</td>
+                        <td>Unsigned 0 .. 255</td>
+                    </tr>
+                    <tr>
+                        <td>short</td>
+                        <td>2</td>
+                        <td>signed i16  -32,768 .. 32,767</td>
+                    </tr>
+                    <tr>
+                        <td>uint</td>
+                        <td>4</td>
+                        <td>unsigned u32 0 .. 4,294,967,295</td>
+                    </tr>
+                    <tr>
+                        <td>int</td>
+                        <td>4</td>
+                        <td>signed i32 -2,147,483,648 .. 2,147,483,647</td>
+                    </tr>
+                    <tr>
+                        <td>ulong</td>
+                        <td>8</td>
+                        <td>unsigned u64 0 .. 18,446,744,073,709,551,615</td>
+                    </tr>
+                    <tr>
+                        <td>string</td>
+                        <td>*</td>
+                        <td>Pascal string. First byte contains the length of the string in bytes</td>
+                    </tr>
+                    <tr>
+                        <td>single</td>
+                        <td>4</td>
+                        <td>Single-precision float</td>
+                    </tr>
+                    <tr>
+                        <td>double</td>
+                        <td>8</td>
+                        <td>Double-precision float</td>
+                    </tr>
+                    <tr>
+                        <td>rect</td>
+                        <td>16</td>
+                        <td>Four i32 values that form a rectangle (left, right, top, bottom)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="file_format_header">
+            <h2>File Format Header</h2>
+            <p>This table represents a .WLD file for version 1.4.0.5</p>
+            <table>
+				<thead>
+					<tr>
+						<th>address</th>
+						<th>Type</th>
+						<th>Size</th>
+						<th>Name</th>
+						<th>Value</th>
+						<th>Comment</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr><td>0x00</td><td>int</td>	<td></td>	<td>curRelease</td>					<td><a href="#cur_release">see here</a></td>	<td></td></tr>
+					<tr><td>0x04</td><td>byte</td>	<td>7</td>	<td>magicNumber</td>				<td><a href="#magic_number">see here</a></td>					<td></td></tr>
+					<tr><td>0x0B</td><td>byte</td>	<td></td>	<td>filetype</td>					<td>2</td>							<td>This value is 1 for .MAP files, 2 for .WLD files, and 3 for .PLR files</td></tr>
+					<tr><td>0x0C</td><td>uint</td>	<td></td>	<td>revision</td>					<td></td>							<td>Incremented every time the file is saved</td></tr>
+					<tr><td>0x10</td><td>ulong</td>	<td></td>	<td>isFavorite</td>					<td>0</td>							<td>A boolean encoded on 64 bits. The code always sets it to false</td></tr>
+					<tr><td>0x18</td><td>short</td>	<td></td>	<td>numberOfPointers</td>			<td>0xB = 11</td>					<td></td></tr>
+					<tr><td>0x01A</td><td>int</td>	<td>11</td>	<td>arrayOfPointers</td>		<td></td>							<td>An array that contains the start addresses of each remaining section of the file.</td></tr>
+					<tr><td>0x46</td><td>short</td>	<td></td>	<td>numberOfTileFrameImportant</td>	<td>0x26F = 623</td>				<td></td></tr>
+					<tr><td>0x48</td><td>bool</td>	<td>623</td>	<td>tileFrameImportant</td>		<td><a href="#tile_frame_important">see here</a></td>							<td></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="world_header">
+            <h2>World Header</h2>
+            <p>
+				This section of the file contains informations on the current state of the game (weathers, kills, time, objective accomplished, boss killed, etc.).<br>
+				This section is not well detailled as lots of informations are yet to be uderstood. At least the architechture is known. <br>
+                Due to the name of the world being a string of undefinite size all addresses of the following table are relative to the row #3.
+            </p>
+            <p><b>This section is out of date. It refers to version 1.3.0.8</b> and is missing data about new NPCs and bosses.</p>
+            <table>
+
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>address</th>
+						<th>Name (from source code)</th>
+						<th>Type</th>
+						<th>Note</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr><td>1</td>		<td>@0x0079</td>	<td>Main.worldNameSize</td>					<td>byte</td>							<td rowspan="2">Those values can be read as one with BinaryReader.Read(String) in c#</td></tr>
+					<tr><td>2</td>		<td>@0x007A</td>	<td>Main.worldName</td>						<td>byte[]</td>							</tr>
+					<tr><td>3</td>		<td>0x0000</td>		<td>Main.worldID</td>						<td>int</td>							<td>The ID of the world, works as a seed. It is used to name the minimap file .MAP inf the player folder.</td></tr>
+					<tr><td>4</td>		<td>0x0004</td>		<td>Main.leftWorld</td>						<td>int</td>							<td rowspan="4">Map dimension in "pixels". Origin is top-left corner.</td></tr>
+					<tr><td>5</td>		<td>0x0008</td>		<td>Main.rightWorld</td>					<td>int</td>							</tr>
+					<tr><td>6</td>		<td>0x000C</td>		<td>Main.topWorld</td>						<td>int</td>							</tr>
+					<tr><td>7</td>		<td>0x0010</td>		<td>Main.bottomWorld</td>					<td>int</td>							</tr>
+					<tr><td>8</td>		<td>0x0014</td>		<td>Main.maxTilesY</td>						<td>int</td>							<td rowspan="2">Map dimension in tiles.</td></tr>
+					<tr><td>9</td>		<td>0x0018</td>		<td>Main.maxTilesX</td>						<td>int</td>							</tr>
+					<tr><td>10</td>		<td>0x001C</td>		<td>Main.expertMode</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>11</td>		<td>0x001D</td>		<td>Main.*.CreationTime</td>				<td>int64</td>							<td>Encoded in a binary format with the C# method DAtetime.ToBinary().</td></tr>
+					<tr><td>12</td>		<td>0x0025</td>		<td>Main.moonType</td>						<td>byte</td>							<td>Not to be confused with the moon phase (see row #36).</td></tr>
+					<tr><td>13</td>		<td>0x0026</td>		<td>Main.treeX[0]</td>						<td>int</td>							<td></td></tr>
+					<tr><td>14</td>		<td>0x002A</td>		<td>Main.treeX[1]</td>						<td>int</td>							<td></td></tr>
+					<tr><td>15</td>		<td>0x002E</td>		<td>Main.treeX[2]</td>						<td>int</td>							<td></td></tr>
+					<tr><td>16</td>		<td>0x0032</td>		<td>Main.treeStyle[0]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>17</td>		<td>0x0036</td>		<td>Main.treeStyle[1]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>18</td>		<td>0x003A</td>		<td>Main.treeStyle[2]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>19</td>		<td>0x003E</td>		<td>Main.treeStyle[3]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>20</td>		<td>0x0042</td>		<td>Main.caveBackX[0]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>21</td>		<td>0x0046</td>		<td>Main.caveBackX[1]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>22</td>		<td>0x004A</td>		<td>Main.caveBackX[2]</td>					<td>int</td>							<td></td></tr>
+					<tr><td>23</td>		<td>0x004E</td>		<td>Main.caveBackStyle[0]</td>				<td>int</td>							<td></td></tr>
+					<tr><td>24</td>		<td>0x0052</td>		<td>Main.caveBackStyle[1]</td>				<td>int</td>							<td></td></tr>
+					<tr><td>25</td>		<td>0x0056</td>		<td>Main.caveBackStyle[2]</td>				<td>int</td>							<td></td></tr>
+					<tr><td>26</td>		<td>0x005A</td>		<td>Main.caveBackStyle[3]</td>				<td>int</td>							<td></td></tr>
+					<tr><td>27</td>		<td>0x005E</td>		<td>Main.iceBackStyle</td>					<td>int</td>							<td></td></tr>
+					<tr><td>28</td>		<td>0x0062</td>		<td>Main.jungleBackStyle</td>				<td>int</td>							<td></td></tr>
+					<tr><td>29</td>		<td>0x0066</td>		<td>Main.hellBackStyle</td>					<td>int</td>							<td></td></tr>
+					<tr><td>30</td>		<td>0x006A</td>		<td>Main.spawnTileX</td>					<td>int</td>							<td></td></tr>
+					<tr><td>31</td>		<td>0x006E</td>		<td>Main.spawnTileY</td>					<td>int</td>							<td></td></tr>
+					<tr><td>32</td>		<td>0x0072</td>		<td>Main.worldSurface</td>					<td>double</td>							<td></td></tr>
+					<tr><td>33</td>		<td>0x007A</td>		<td>Main.rockLayer</td>						<td>double</td>							<td></td></tr>
+					<tr><td>34</td>		<td>0x0082</td>		<td>WorldFile.tempTime</td>					<td>double</td>							<td></td></tr>
+					<tr><td>35</td>		<td>0x008A</td>		<td>WorldFile.tempDayTime</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>36</td>		<td>0x008B</td>		<td>WorldFile.tempMoonPhase</td>			<td>int</td>							<td></td></tr>
+					<tr><td>37</td>		<td>0x008F</td>		<td>WorldFile.tempBloodMoon</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>38</td>		<td>0x0090</td>		<td>WorldFile.tempEclipse</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>39</td>		<td>0x0091</td>		<td>Main.dungeonX</td>						<td>int</td>							<td></td></tr>
+					<tr><td>40</td>		<td>0x0095</td>		<td>Main.dungeonY</td>						<td>int</td>							<td></td></tr>
+					<tr><td>41</td>		<td>0x0099</td>		<td>WorldGen.crimson</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>42</td>		<td>0x009A</td>		<td>NPC.downedBoss1</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>43</td>		<td>0x009B</td>		<td>NPC.downedBoss2</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>44</td>		<td>0x009C</td>		<td>NPC.downedBoss3</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>45</td>		<td>0x009D</td>		<td>NPC.downedQueenBee</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>46</td>		<td>0x009E</td>		<td>NPC.downedMechBoss1</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>47</td>		<td>0x009F</td>		<td>NPC.downedMechBoss2</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>48</td>		<td>0x00A0</td>		<td>NPC.downedMechBoss3</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>49</td>		<td>0x00A1</td>		<td>NPC.downedMechBossAny</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>50</td>		<td>0x00A2</td>		<td>NPC.downedPlantBoss</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>51</td>		<td>0x00A3</td>		<td>NPC.downedGolemBoss</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>52</td>		<td>0x00A4</td>		<td>NPC.downedSlimeKing</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>53</td>		<td>0x00A5</td>		<td>NPC.savedGoblin</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>54</td>		<td>0x00A6</td>		<td>NPC.savedWizard</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>55</td>		<td>0x00A7</td>		<td>NPC.savedMech</td>						<td>byte</td>							<td></td></tr>
+					<tr><td>56</td>		<td>0x00A8</td>		<td>NPC.downedGoblins</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>57</td>		<td>0x00A9</td>		<td>NPC.downedClown</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>58</td>		<td>0x00AA</td>		<td>NPC.downedFrost</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>59</td>		<td>0x00AB</td>		<td>NPC.downedPirates</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>60</td>		<td>0x00AC</td>		<td>WorldGen.shadowOrbSmashed</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>61</td>		<td>0x00AD</td>		<td>WorldGen.spawnMeteor</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>62</td>		<td>0x00AE</td>		<td>WorldGen.shadowOrbCount</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>63</td>		<td>0x00AF</td>		<td>WorldGen.altarCount</td>				<td>int</td>							<td></td></tr>
+					<tr><td>64</td>		<td>0x00B3</td>		<td>Main.hardMode</td>						<td>byte</td>							<td></td></tr>
+					<tr><td>65</td>		<td>0x00B4</td>		<td>Main.invasionDelay</td>					<td>int</td>							<td></td></tr>
+					<tr><td>66</td>		<td>0x00B8</td>		<td>Main.invasionSize</td>					<td>int</td>							<td></td></tr>
+					<tr><td>67</td>		<td>0x00BC</td>		<td>Main.invasionType</td>					<td>int</td>							<td></td></tr>
+					<tr><td>68</td>		<td>0x00C0</td>		<td>Main.invasionX</td>						<td>double</td>							<td></td></tr>
+					<tr><td>69</td>		<td>0x00C8</td>		<td>Main.slimeRainTime</td>					<td>double</td>							<td></td></tr>
+					<tr><td>70</td>		<td>0x00D0</td>		<td>Main.sundialCooldown</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>71</td>		<td>0x00D1</td>		<td>WorldFile.tempRaining</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>72</td>		<td>0x00D2</td>		<td>WorldFile.tempRainTime</td>				<td>int</td>							<td></td></tr>
+					<tr><td>73</td>		<td>0x00D6</td>		<td>WorldFile.tempMaxRain</td>				<td>float</td>							<td></td></tr>
+					<tr><td>74</td>		<td>0x00DA</td>		<td>WorldGen.oreTier1</td>					<td>int</td>							<td></td></tr>
+					<tr><td>75</td>		<td>0x00DE</td>		<td>WorldGen.oreTier2</td>					<td>int</td>							<td></td></tr>
+					<tr><td>76</td>		<td>0x00E2</td>		<td>WorldGen.oreTier3</td>					<td>int</td>							<td></td></tr>
+					<tr><td>77</td>		<td>0x00E6</td>		<td>WorldGen.treeBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>78</td>		<td>0x00E7</td>		<td>WorldGen.corruptBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>79</td>		<td>0x00E8</td>		<td>WorldGen.jungleBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>80</td>		<td>0x00E9</td>		<td>WorldGen.snowBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>81</td>		<td>0x00EA</td>		<td>WorldGen.hallowBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>82</td>		<td>0x00EB</td>		<td>WorldGen.crimsonBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>83</td>		<td>0x00EC</td>		<td>WorldGen.desertBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>84</td>		<td>0x00ED</td>		<td>WorldGen.oceanBG</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>85</td>		<td>0x00EE</td>		<td>Main.cloudBGActive</td>					<td>int</td>							<td></td></tr>
+					<tr><td>86</td>		<td>0x00F2</td>		<td>Main.numClouds</td>						<td>short</td>							<td></td></tr>
+					<tr><td>87</td>		<td>0x00F4</td>		<td>Main.windSpeedSet</td>					<td>float</td>							<td></td></tr>
+					<tr><td>88</td>		<td>0x00F8</td>		<td>Main.anglerWhoFinishedToday.Count</td>	<td>int</td>							<td></td></tr>
+					<tr><td>89</td>		<td>0x00FC</td>		<td>Main.anglerWhoFinishedToday[i]</td>		<td class="wrop">string[row #88]</td>	<td>Each string is 1 byte for length and "length" bytes of char.</td></tr>
+					<tr><td>90</td>		<td>0x0000</td>		<td>NPC.savedAngler</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>91</td>		<td>0x0001</td>		<td>Main.anglerQuest</td>					<td>int</td>							<td></td></tr>
+					<tr><td>92</td>		<td>0x0005</td>		<td>NPC.savedStylist</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>93</td>		<td>0x0006</td>		<td>NPC.savedTaxCollector</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>94</td>		<td>0x0007</td>		<td>Main.invasionSizeStart</td>				<td>int</td>							<td></td></tr>
+					<tr><td>95</td>		<td>0x000B</td>		<td>WorldFile.tempCultistDelay</td>			<td>int</td>							<td></td></tr>
+					<tr><td>96</td>		<td>0x000F</td>		<td>540</td>								<td>short</td>							<td>This is a constant</td></tr>
+					<tr><td>97</td>		<td>0x0011</td>		<td>NPC.killCount[540]</td>					<td>int[540]</td>						<td></td></tr>
+					<tr><td>98</td>		<td>0x0881</td>		<td>Main.fastForwardTime</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>99</td>		<td>0x0882</td>		<td>NPC.downedFishron</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>100</td>	<td>0x0883</td>		<td>NPC.downedMartians</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>101</td>	<td>0x0884</td>		<td>NPC.downedAncientCultist</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>102</td>	<td>0x0885</td>		<td>NPC.downedMoonlord</td>					<td>byte</td>							<td></td></tr>
+					<tr><td>103</td>	<td>0x0886</td>		<td>NPC.downedHalloweenKing</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>104</td>	<td>0x0887</td>		<td>NPC.downedHalloweenTree</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>105</td>	<td>0x0888</td>		<td>NPC.downedChristmasIceQueen</td>		<td>byte</td>							<td></td></tr>
+					<tr><td>106</td>	<td>0x0889</td>		<td>NPC.downedChristmasSantank</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>107</td>	<td>0x088A</td>		<td>NPC.downedChristmasTree</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>108</td>	<td>0x088B</td>		<td>NPC.downedTowerSolar</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>109</td>	<td>0x088C</td>		<td>NPC.downedTowerVortex</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>110</td>	<td>0x088D</td>		<td>NPC.downedTowerNebula</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>111</td>	<td>0x088E</td>		<td>NPC.downedTowerStardust</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>112</td>	<td>0x088F</td>		<td>NPC.TowerActiveSolar</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>113</td>	<td>0x0890</td>		<td>NPC.TowerActiveVortex</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>114</td>	<td>0x0891</td>		<td>NPC.TowerActiveNebula</td>				<td>byte</td>							<td></td></tr>
+					<tr><td>115</td>	<td>0x0892</td>		<td>NPC.TowerActiveStardust</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>116</td>	<td>0x0893</td>		<td>NPC.LunarApocalypseIsUp</td>			<td>byte</td>							<td></td></tr>
+					<tr><td>	</td>	<td>0x0894</td>		<td>Next section of the document</td>		<td>-</td>								<td>This address should be 0xA0A + worldNameSize + sizeof(anglerWhoFinishedToday)</td></tr>
+				</tbody>
+            </table>
+        </div>
+        <div id="world_tiles">
+            <h2>World Tiles</h2>
+            <p>Each tile is represented by 1 to 13 bytes. The first byte, Flag1, is always present. Every other byte is conditional.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Name</th>
+                        <th>Note</th>
+                        <th>Is present if</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Flag1</td>
+                        <td>Flags. <a href="#flag1">See here</a></td>
+                        <td>Always present, may be the only one.</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>Flag2</td>
+                        <td>Flags, wires and slopes. <a href="#flag2">See here</a>
+                        </td><td>Flag1 bit 0</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>Flag3</td>
+                        <td>Flags, actuator and actuated state. <a href="#flag3">See here</a>
+                        </td><td>Flag2 bit 0</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>Type of tile (LSB)</td>
+                        <td rowspan="2"><a href="http://terraria.gamepedia.com/Tile_IDs">Wiki (Tile IDs)</a>
+                        </td><td>Flag1 bit 1</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>Type of tile (MSB)</td>
+                        <td>Flag1 bit 5</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>FrameX (LSB)</td>
+                        <td rowspan="4">Not much info.<br><a href="#tile_frame_important">See here.</a>
+                        </td><td rowspan="4">tileFrameImportant[Type of tile]</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>FrameX (MSB</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>FrameY (LSB)</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>FrameY (MSB)</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>Paint of the tile</td>
+                        <td>No list of ID yet.</td>
+                        <td>Flag3 bit 3</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td>Type of wall</td>
+                        <td><a href="http://terraria.gamepedia.com/Wall_IDs">Wiki (Wall IDs)</a></td>
+                        <td>Flag1 bit 2</td>
+                    </tr>
+                    <tr>
+    
+                        <td>1</td>
+                        <td>Paint of the wall</td>
+                        <td>No list of ID yet.</td>
+                        <td>Flag3 bit 4</td>
+                    </tr>
+                    <tr>
+    
+                        <td>1</td>
+                        <td>Volume of the liquid</td>
+                        <td>0xFF is a tile full of liquid. I think all values are valid.</td>
+                        <td>Flag1 bit 3 OR Flag1 bit 4</td>
+                    </tr>
+                    <tr>
+    
+                        <td>1</td>
+                        <td>RLE LSB</td>
+                        <td rowspan="2">How much strictly identical<br>tiles are coming AFTER this one.</td>
+                        <td>Flag1 bit 6</td>
+                    </tr>
+                    <tr>
+    
+                        <td>1</td>
+                        <td>RLE MSB</td>
+                        <td>Flag1 bit 7</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Note: RLE is always two bytes if flag1 bit 7 is set. Flag1 bit 6 may not always be set when bit 7 is.</p>
+            <div id="flags">
+                <h3>Flags</h3>
+                <div id="flag1">
+                    <h4>Flag1</h4>
+                    <p>This byte is always present.</p>
+                    <ul>
+                        <li>Bit.0 Flag2 is present</li>
+                        <li>Bit.1 Brick is not air</li>
+                        <li>Bit.2 There is a wall</li>
+                        <li>Bit.3 Type of Liquid</li>
+                        <li>Bit.4 See bit.3</li>
+                        <li>Bit.5 The type of tile is saved on 2 bytes</li>
+                        <li>Bit.6 RLE is on for up to 255 tiles</li>
+                        <li>Bit.7 RLE is on for more than 255 tiles and up to 65535 tiles</li>
+                    </ul>
+                    <p>The 4th and 5th bits (bit.4 and bit.3) are used to represent a liquid like this:</p>
+                    <table>
+                        <thead>
+                            <tr><th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th><th>Type of liquid</th>	</tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>-</td><td>-</td><td>-</td><td>0</td><td>0</td><td>-</td><td>-</td><td>-</td><td>No liquid</td>	</tr>
+                            <tr><td>-</td><td>-</td><td>-</td><td>0</td><td>1</td><td>-</td><td>-</td><td>-</td><td>Water</td>	</tr>
+                            <tr><td>-</td><td>-</td><td>-</td><td>1</td><td>0</td><td>-</td><td>-</td><td>-</td><td>Lava</td>	</tr>
+                            <tr><td>-</td><td>-</td><td>-</td><td>1</td><td>1</td><td>-</td><td>-</td><td>-</td><td>Honey</td>	</tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="flag2">
+                    <h4>Flag2</h4>
+                    <ul>
+                        <li>Bit.0 Flag3 is present</li>
+                        <li>Bit.1 There is a red wire</li>
+                        <li>Bit.2 There is a blue wire</li>
+                        <li>Bit.3 There is a green wire</li>
+                        <li>Bit.4 This is a halftile or slope</li>
+                        <li>Bit.5 See bit.4</li>
+                        <li>Bit.6 See bit.4</li>
+                        <li>Bit.7 Bit unused</li>
+                    </ul>
+                    <p>This 5th, 6th, and 7th bits (bit.6, bit.5, bit.4) are used to represent an altered tile like this:</p>
+                    <table>
+                        <thead>
+                            <tr>	<th>7</th><th>6</th><th>5</th><th>4</th><th>3</th><th>2</th><th>1</th><th>0</th><th>Type of alteration</th>	</tr>
+                        </thead>
+                        <tbody>
+                            <tr>	<td>-</td><td>0</td><td>0</td><td>0</td><td>-</td><td>-</td><td>-</td><td>-</td><td>No alteration, tile is a square.</td>	</tr>
+                            <tr>	<td>-</td><td>0</td><td>0</td><td>1</td><td>-</td><td>-</td><td>-</td><td>-</td><td>Half tile.</td>	</tr>
+                            <tr>	<td>-</td><td>0</td><td>1</td><td>0</td><td>-</td><td>-</td><td>-</td><td>-</td><td>Slope with top-right corner missing.</td>	</tr>
+                            <tr>	<td>-</td><td>0</td><td>1</td><td>1</td><td>-</td><td>-</td><td>-</td><td>-</td><td>Slope with top-left corner missing.</td>	</tr>
+                            <tr>	<td>-</td><td>1</td><td>0</td><td>0</td><td>-</td><td>-</td><td>-</td><td>-</td><td>Slope with bottom-right corner missing.</td>	</tr>
+                            <tr>	<td>-</td><td>1</td><td>0</td><td>1</td><td>-</td><td>-</td><td>-</td><td>-</td><td>Slope with bottom-left corner missing.</td>	</tr>
+                            <tr>	<td>-</td><td>1</td><td>1</td><td>0</td><td>-</td><td>-</td><td>-</td><td>-</td><td>unused</td>	</tr>
+                            <tr>	<td>-</td><td>1</td><td>1</td><td>1</td><td>-</td><td>-</td><td>-</td><td>-</td><td>unused</td>	</tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="flag3">
+                    <h4>Flag3</h4>
+                    <ul>
+                        <li>Bit.0 Bit unused</li>
+                        <li>Bit.1 There is an actuator</li>
+                        <li>Bit.2 The the is actuated</li>
+                        <li>Bit.3 The tile is painted</li>
+                        <li>Bit.4 The wall is painted</li>
+                        <li>Bit.5 Bit unused</li>
+                        <li>Bit.6 Bit unused</li>
+                        <li>Bit.7 Bit unused</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="chests">
+            <h2>Chests</h2>
+            <p>No info yet</p>
+        </div>
+        <div id="signs">
+            <h2>Signs</h2>
+            <p>No info yet</p>
+        </div>
+        <div id="npcs">
+            <h2>NPCs</h2>
+            <p>No info yet</p>
+        </div>
+        <div id="entities">
+            <h2>Entities</h2>
+            <p>No info yet</p>
+        </div>
+        <div id="footer">
+            <h2>Footer</h2>
+            <p>The footer is used for file validation. The second and third values are compared to their equivalents in the header</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>?</td>
+                        <td>Unknown 2 byte space</td>
+                    </tr>
+                    <tr>
+                        <td>String</td>
+                        <td>World name (must match name in header)</td>
+                    </tr>
+                    <tr>
+                        <td>int</td>
+                        <td>World ID (must match ID in header)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>
+                Note: The string value representing the world name does not have a leading byte that gives it's length, unlike other strings in the file.
+                The length is acquired from the header.
+            </p>
+        </div>
+        <div id="constants">
+            <h2>Constants</h4>
+            <div id="cur_release">
+                <h3>Current Release</h3>
+                <table>
+					<thead>
+						<tr>
+							<th>Code</th><th>Code (decimal)</th><th>Version</th><th>Notes</th>
+						</tr>
+					</thead>
+					<tbody>
+					<!--
+						<tr>
+							<td>0x</td><td>@@@</td><td>@@</td><td><a href=@@@@">source"</a></td>
+						</tr>
+					-->
+						<tr>	<td>0x47</td><td>71</td><td>1.2.0.3.1</td>	<td><a href="https://github.com/TheVamp/Terraria-Source-Code/tree/master/Terraria">source</a></td>							</tr>
+						<tr>	<td>0x4D</td><td>77</td><td>1.2.2</td>		<td><a href="https://tshock.co/xf/index.php?threads/need-custom-server-side-version.2700/">source</a></td>						</tr>
+						<tr>	<td>0x66</td><td>102</td><td>1.2.4.1</td>	<td><a href="http://www.terrariaonline.com/threads/1-2-4-terraria-save-game-inventory-editor.107906/page-20">source</a></td>	</tr>
+						<tr>	<td>0x9B</td><td>151</td><td>1.3.0.4</td>	<td></td>	</tr>
+						<tr>	<td>0x9B</td><td>153</td><td>1.3.0.5</td>	<td></td>	</tr>
+						<tr>	<td>0x9B</td><td>154</td><td>1.3.0.6</td>	<td></td>	</tr>
+						<tr>	<td>0x9B</td><td>155</td><td>1.3.0.7</td>	<td></td>	</tr>
+                        <tr>	<td>0x9C</td><td>156</td><td>1.3.0.8</td>	<td></td>	</tr>
+                        <tr>    <td>0xE4</td><td>228</td><td>1.4.0.5</td>   <td></td>   </tr>
+					</tbody>
+                </table>
+            </div>
+            <div id="magic_number">
+                <h3>Magic number</h3>
+                <p>This number is used as a long in Terraria.exe because it is a static string.</p>
+                <ul>
+                    <li>The unsigned long value is 27981915666277746</li>
+                    <li>The string value is "relogic"</li>
+                    <li>The hexadecimal value is 0x72 0x65 0x6C 0x6F 0x67 0x69 0x63</li>
+                </ul>
+                <p>Be careful as a long value is saved on 8 bytes and the string value is saved on 7 bytes.</p>
+            </div>
+            <div id="tile_frame_important">
+                <h3>Tile Frame Important</h3>
+                <p>
+					It's a copy of the array tileFrameImportant (used in the game). It is set to true for each tile that is animated (torch, etc.), larger than 1 block (life crystal, etc.), has alternative sprite (altars [demon/crimson], table (wood/boreal/cactus/...], etc.).<br>
+                    Here are the value of this array as bytes[78] instead of bool[623]. This can be read as an array of 624 bits (the last bit being unused) or 78 bytes.<br>
+					The data of tileFrameImportant should be used as bits instead of bytes for convenience.
+                </p>
+                <p>
+                    This seems to be used by checking if the bit that corresponds to a item ID is 1. For example, a torch with an ID of 4
+                    can be checked by seeing if the 4th bit of the 623 bit sequence is 1.
+                </p>
+                <table>
+					<thead>
+						<tr>
+							<th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>0x38</td><td>0xFC</td><td>0x3F</td><td>0xBD</td><td>0x1E</td><td>0x04</td><td>0x84</td><td>0x20</td><td>0x80</td><td>0xE7</td><td>0xFE</td><td>0xFF</td><td>0xFF</td><td>0x47</td><td>0x06</td><td>0x60</td>
+						</tr>
+						<tr>
+							<td>0xF3</td><td>0xEF</td><td>0x21</td><td>0x00</td><td>0x20</td><td>0x78</td><td>0x04</td><td>0x0F</td><td>0x00</td><td>0x82</td><td>0x96</td><td>0x1F</td><td>0x98</td><td>0xFA</td><td>0xFF</td><td>0x40</td>
+						</tr>
+						<tr>
+							<td>0x00</td><td>0xE0</td><td>0xF8</td><td>0xEF</td><td>0xFF</td><td>0xFF</td><td>0x7F</td><td>0xF4</td><td>0x19</td><td>0xC0</td><td>0x0E</td><td>0x20</td><td>0xDC</td><td>0x1F</td><td>0xF0</td><td>0x17</td>
+						</tr>
+						<tr>
+							<td>0xFC</td><td>0x0F</td><td>0x60</td><td>0x7C</td><td>0x98</td><td>0x3B</td><td>0xF8</td><td>0x3F</td><td>0xF0</td><td>0xE3</td><td>0xFF</td><td>0x18</td><td>0xF1</td><td>0x6F</td><td>0x0A</td><td>0xE6</td>
+                        </tr>
+                        <tr>
+                            <td>0xC0</td><td>0xFF</td><td>0x3E</td><td>0xC4</td><td>0xFB</td><td>0xDF</td><td>0xB1</td><td>0x3F</td><td>0xF8</td><td>0xFF</td><td>0xFF</td><td>0xFF</td><td>0xFF</td><td>0x7B</td><td>-</td><td>-</td>
+                        </tr>
+					</tbody>
+                </table>
+            </div>
+        </div>
+        <h3>Credit</h3>
+        <p>Information about the WLD format was obtained from <a href="http://ludwig.schafer.free.fr/">ludwig.schafer.free.fr</a> and <a href="https://seancode.com/terrafirma/world.html">seancode.com/terrafirma/world.html</a> as well as personal trial and error.</p>
+    </body>
+</html>
