@@ -75,8 +75,8 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(file_path: &Path) -> World {
-        let mut tfile_reader = TFileReader::new(file_path);
+    pub fn new(world_path: &Path) -> World {
+        let mut tfile_reader = TFileReader::new(&world_path);
         let header = Header::new(&mut tfile_reader);
         World {
             tfile_reader,
