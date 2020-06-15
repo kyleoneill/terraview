@@ -48,16 +48,16 @@ pub fn run(world_name: String) -> Result<i32, Box<dyn Error>> {
 fn get_file_paths(world_name: &String) -> (PathBuf, PathBuf) {
     let mut world_name = world_name.to_owned();
 
-    let mut world_path: PathBuf = dirs::home_dir().unwrap();
-    world_path.push("Documents/My Games/Terraria/Worlds/");
+    let mut folder_path: PathBuf = dirs::home_dir().unwrap();
+    folder_path.push("Documents/My Games/Terraria/Worlds/");
 
     let mut original_world_name = world_name.clone();
     original_world_name.push_str(".wld");
-    let original_file = world_path.join(&original_world_name);
-    assert!(original_file.is_file(), "Could not locate Terraria world folder.");
+    let original_file_path = folder_path.join(&original_world_name);
+    assert!(original_file_path.is_file(), format!("Could not locate Terraria world file with name '{}'.", &world_name));
 
     world_name.push_str("_modified.wld");
-    let modified_file = world_path.join(&world_name);
+    let modified_file_path = folder_path.join(&world_name);
 
-    (original_file, modified_file)
+    (original_file_path, modified_file_path)
 }
